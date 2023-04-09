@@ -1,2 +1,2 @@
 # crypto_widget
-screen widget for crypto price monitorin
+screen widget for crypto price monitoring
