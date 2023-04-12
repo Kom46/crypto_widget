@@ -1,5 +1,4 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QDesktopWidget
+from PyQt5.QtWidgets import QLabel, QWidget, QDesktopWidget
 
 class ScreenWidget(QWidget):
     def __init__(self):
@@ -18,8 +17,3 @@ class ScreenWidget(QWidget):
         self.move(x, y) # move to top right corner
         self.label.adjustSize()
         self.show()
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    screen_widget = ScreenWidget()
-    sys.exit(app.exec_())

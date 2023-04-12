@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Self
+import os
 import yfinance as yf
 import json as js
 import datetime as dt
@@ -7,7 +7,7 @@ import datetime as dt
 
 class basicClient:
     def __new__(cls) -> 'basicClient':
-        pass
+        return super().__new__(cls)
 
     def __init__(self) -> None:
         pass
@@ -18,7 +18,7 @@ class basicClient:
             data = ticket
         return data
 
-    def getTickets(self, tickets=any, start=dt.date(), end=dt.date()):
+    def getTickets(self, tickets=any, start=dt.datetime.now(), end=dt.datetime.now()):
         data = []
         ticketClass = namedtuple('Ticket', ['name', 'ticketData'])
         for ticket in tickets["tickets"]:
@@ -32,7 +32,7 @@ class yahooClient(basicClient):
         pass
 
     def __new__(cls) -> 'yahooClient':
-        return super().__new__()
+        return super().__new__(cls)
     
     def getTicket(self, ticket: str = None, start = dt.datetime.now(), end = dt.datetime.now()):
         result = super().getTicket(ticket)
@@ -55,12 +55,13 @@ class stockExchange:
         if name != None:
             self.client = stockClients.get(name).__new__()
 
-
+params_filename = "params.json"
+params_file = f"{os.path.dirname(__file__)}/{params_filename}"
 class stockClient:
     def __init__(self) -> None:
         self.clients = []
         # load conig
-        with open("parms.json", "r") as fd:
+        with open(params_file, "r") as fd:
             config = js.load(fp=fd)
             for st in config["stock_exchange"]:
                 self.stock = stockExchange(
