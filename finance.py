@@ -33,8 +33,8 @@ class yahooClient(basicClient):
 
     def __new__(cls) -> 'yahooClient':
         return super().__new__(cls)
-    
-    def getTicket(self, ticket: str = None, start = dt.datetime.now(), end = dt.datetime.now()):
+
+    def getTicket(self, ticket: str = None, start=dt.datetime.now(), end=dt.datetime.now()):
         result = super().getTicket(ticket)
         if result != None:
             ticker = yf.Ticker(ticket)
@@ -46,23 +46,43 @@ class yahooClient(basicClient):
 
 stockClients = {"yahoo": yahooClient}
 
-
 class stockExchange:
     def __init__(self, name=None, tickets=[], api_key=None) -> None:
         self.name = name
         self.api_key = api_key
         self.tickets = tickets
         if name != None:
-            self.client = stockClients.get(name).__new__()
+            try:
+                self.client = stockClients[name]()
+            except KeyError:
+                self.client = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+    def get_stock_price(self):
+        price = self.client.getTickets()
+        return price
+
 
 params_filename = "params.json"
 params_file = f"{os.path.dirname(__file__)}/{params_filename}"
+
+
 class stockClient:
     def __init__(self) -> None:
-        self.clients = []
-        # load conig
+        self.stocks = []
+        # load config
         with open(params_file, "r") as fd:
             config = js.load(fp=fd)
             for st in config["stock_exchange"]:
-                self.stock = stockExchange(
-                    st["name"], st["tickets"], st["api_key"])
+                self.stocks.append(stockExchange(
+                    st["name"], st["tickets"], st["api_key"]))
+
+    def getCurrentPrices(self):
+        for stock in self.stocks:
+            if stock.client != None:
+                return stock.get_stock_price()

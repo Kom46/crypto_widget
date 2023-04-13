@@ -1,3 +1,4 @@
+from io import StringIO
 import unittest
 import datetime as dt
 from unittest.mock import patch, MagicMock
@@ -20,7 +21,7 @@ class TestYahooClient(unittest.TestCase):
     def setUp(self):
         self.client = yahooClient()
 
-    @patch("main.yf.Ticker")
+    @patch("finance.yf.Ticker")
     def test_getTicket(self, mock_ticker):
         mock_data = MagicMock()
         mock_data.__getitem__.return_value = 100
@@ -35,6 +36,11 @@ class TestStockExchange(unittest.TestCase):
         self.assertEqual(self.exchange.tickets, ["AAPL", "MSFT"])
         self.assertEqual(self.exchange.api_key, "api_key")
         self.assertIsInstance(self.exchange.client, yahooClient)
+    def test_get_stock_price(self):
+        stock_exchange = stockExchange("yahoo", ["AAPL", "MSFT"], "api_key")
+        stock_exchange.client.getTickets = MagicMock(return_value=[(100, {"Close": [100]}), (200, {"Close": [200]})])
+        expected_result = [100, 200]
+        self.assertEqual(stock_exchange.get_stock_price(), expected_result)
         
 class TestStockClient(unittest.TestCase):
     def setUp(self):
@@ -43,8 +49,19 @@ class TestStockClient(unittest.TestCase):
     @patch("finance.open")
     def test_init(self, mock_open):
         mock_open.return_value.__enter__.return_value.read.return_value = '{"stock_exchange": [{"name": "yahoo", "tickets": ["AAPL", "MSFT"], "api_key": "api_key"}]}'
-        self.assertEqual(len(self.client.stock), 1)
-        self.assertIsInstance(self.client.stock[0], stockExchange)
+        self.assertEqual(len(self.client.stocks), 1)
+        self.assertIsInstance(self.client.stocks[0], stockExchange)
+    
+    def test_getCurrentPrices(self):
+        stock_client = stockClient()
+        stock_client.stocks = [stockExchange("yahoo", ["AAPL", "MSFT"], "api_key")]
+        stock_client.stocks[0].client.getTickets = MagicMock(return_value=[(100, {"Close": [100]}), (200, {"Close": [200]})])
+        expected_output = "AAPL: 100\nMSFT: 200\n"
+        with unittest.mock.patch('sys.stdout', new=StringIO()) as fake_output:
+            result = stock_client.getCurrentPrices()
+            for price in result:
+                print(f"{price[0]}: {price[1]['Close']}\n")
+            self.assertEqual(fake_output.getvalue().strip(), expected_output)
 
 if __name__ == '__main__':
     unittest.main()
