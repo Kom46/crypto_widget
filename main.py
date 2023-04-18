@@ -7,4 +7,5 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     screen_widget = ScreenWidget()
     client = stockClient()
+    print(client.getCurrentPrices())
     sys.exit(app.exec_())

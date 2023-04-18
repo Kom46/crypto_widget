@@ -21,7 +21,7 @@ class basicClient:
     def getTickets(self, tickets=any, start=dt.datetime.now(), end=dt.datetime.now()):
         data = []
         ticketClass = namedtuple('Ticket', ['name', 'ticketData'])
-        for ticket in tickets["tickets"]:
+        for ticket in tickets:
             data.append(ticketClass(
                 ticket["name"], self.getTicket(ticket["ticket"])))
         return data
@@ -34,12 +34,16 @@ class yahooClient(basicClient):
     def __new__(cls) -> 'yahooClient':
         return super().__new__(cls)
 
-    def getTicket(self, ticket: str = None, start=dt.datetime.now(), end=dt.datetime.now()):
+    def getTicket(self, ticket: str = None, start=dt.datetime.today(), end=dt.datetime.today()):
         result = super().getTicket(ticket)
         if result != None:
             ticker = yf.Ticker(ticket)
             data = ticker.history(start=start, end=end)
-            price = data["Close"][0]
+            price = None
+            try:
+                price = data["Close"][0]
+            except:
+                pass
             result = price, data
         return result
 
@@ -64,7 +68,7 @@ class stockExchange:
         pass
 
     def get_stock_price(self):
-        price = self.client.getTickets()
+        price = self.client.getTickets(tickets=self.tickets)
         return price
 
 
