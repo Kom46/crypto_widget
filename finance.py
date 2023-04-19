@@ -35,13 +35,13 @@ class yahooClient(basicClient):
         return super().__new__(cls)
 
     def getTicket(self, ticket: str = None, start=dt.datetime.today(), end=dt.datetime.today()):
-        result = super().getTicket(ticket)
-        if result != None:
+        if super().getTicket(ticket) != None:
             ticker = yf.Ticker(ticket)
-            data = ticker.history(start=start, end=end)
+            data = ticker.get_info()
+            # data = ticker.history(start=start, end=end)
             price = None
             try:
-                price = data["Close"][0]
+                price = data["regularMarketOpen"]
             except:
                 pass
             result = price, data
@@ -67,9 +67,12 @@ class stockExchange:
     def __exit__(self, exc_type, exc_value, traceback):
         pass
 
-    def get_stock_price(self):
-        price = self.client.getTickets(tickets=self.tickets)
-        return price
+    def getStockPrices(self):
+        tickets = self.client.getTickets(tickets=self.tickets)
+        result = []
+        for ticket in tickets:
+            result.append(ticket.ticketData[0])
+        return result
 
 
 params_filename = "params.json"

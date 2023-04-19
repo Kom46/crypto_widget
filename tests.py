@@ -40,7 +40,7 @@ class TestStockExchange(unittest.TestCase):
         stock_exchange = stockExchange("yahoo", ["AAPL", "MSFT"], "api_key")
         stock_exchange.client.getTickets = MagicMock(return_value=[(100, {"Close": [100]}), (200, {"Close": [200]})])
         expected_result = [100, 200]
-        self.assertEqual(stock_exchange.get_stock_price(), expected_result)
+        self.assertEqual(stock_exchange.getStockPrices(), expected_result)
         
 class TestStockClient(unittest.TestCase):
     def setUp(self):
