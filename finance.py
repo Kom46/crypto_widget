@@ -6,6 +6,8 @@ import datetime as dt
 
 
 class basicClient:
+    tickers = []
+    
     def __new__(cls) -> 'basicClient':
         return super().__new__(cls)
 
@@ -28,11 +30,11 @@ class basicClient:
 
 
 class yahooClient(basicClient):
-    def __init__(self) -> None:
-        pass
+    # def __init__(self) -> None:
+    #     pass
 
-    def __new__(cls) -> 'yahooClient':
-        return super().__new__(cls)
+    # def __new__(cls) -> 'yahooClient':
+    #     return super().__new__(cls)
 
     def getTicket(self, ticket: str = None, start=dt.datetime.today(), end=dt.datetime.today()):
         if super().getTicket(ticket) != None:
@@ -47,19 +49,26 @@ class yahooClient(basicClient):
             result = price, data
         return result
 
+# TODO: implement kucoin crypto exchange
+class kucoinClient(basicClient):
+    pass
+    # def __init__(self, name=None, tickets=[], api_key=None, api_secret=None, api_passphrase=None) -> None:
+    #     pass
 
-stockClients = {"yahoo": yahooClient}
+stockClients = {"yahoo": yahooClient, "kucoin": kucoinClient}
 
 class stockExchange:
-    def __init__(self, name=None, tickets=[], api_key=None) -> None:
-        self.name = name
-        self.api_key = api_key
-        self.tickets = tickets
-        if name != None:
+    def __init__(self, stock) -> None:
+        self.__name = stock["name"]
+        self.__tickets = stock["tickets"]
+        if self.__name != None:
             try:
-                self.client = stockClients[name]()
+                self.__client = stockClients[self.__name]()
             except KeyError:
-                self.client = None
+                self.__client = None
+    @property
+    def client(self):
+        return self.__client
 
     def __enter__(self):
         return self
@@ -68,7 +77,7 @@ class stockExchange:
         pass
 
     def getStockPrices(self):
-        tickets = self.client.getTickets(tickets=self.tickets)
+        tickets = self.client.getTickets(tickets=self.__tickets)
         result = []
         for ticket in tickets:
             result.append(ticket.ticketData[0])
@@ -81,15 +90,14 @@ params_file = f"{os.path.dirname(__file__)}/{params_filename}"
 
 class stockClient:
     def __init__(self) -> None:
-        self.stocks = []
+        self.__stocks = []
         # load config
         with open(params_file, "r") as fd:
             config = js.load(fp=fd)
             for st in config["stock_exchange"]:
-                self.stocks.append(stockExchange(
-                    st["name"], st["tickets"], st["api_key"]))
+                self.__stocks.append(stockExchange(st))
 
     def getCurrentPrices(self):
-        for stock in self.stocks:
+        for stock in self.__stocks:
             if stock.client != None:
-                return stock.get_stock_price()
+                return stock.getStockPrices()
