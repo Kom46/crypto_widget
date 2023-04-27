@@ -3,6 +3,8 @@ import os
 import yfinance as yf
 import json as js
 import datetime as dt
+from kucoin.client import Client as kc
+from kucoin.exceptions import *
 
 
 class basicClient:
@@ -11,9 +13,12 @@ class basicClient:
     def __new__(cls) -> 'basicClient':
         return super().__new__(cls)
 
-    def __init__(self) -> None:
+    def __init__(self, config = None) -> None:
         pass
-
+    
+    def apiError(self):
+        print(f"One of api keys for class {self.__class__.__name__} is missing!")
+    
     def getTicket(self, ticket: str = None):
         data = None
         if ticket != None:
@@ -30,11 +35,6 @@ class basicClient:
 
 
 class yahooClient(basicClient):
-    # def __init__(self) -> None:
-    #     pass
-
-    # def __new__(cls) -> 'yahooClient':
-    #     return super().__new__(cls)
 
     def getTicket(self, ticket: str = None, start=dt.datetime.today(), end=dt.datetime.today()):
         if super().getTicket(ticket) != None:
@@ -51,9 +51,47 @@ class yahooClient(basicClient):
 
 # TODO: implement kucoin crypto exchange
 class kucoinClient(basicClient):
-    pass
-    # def __init__(self, name=None, tickets=[], api_key=None, api_secret=None, api_passphrase=None) -> None:
-    #     pass
+    
+    def __init__(self, config = None) -> None:
+        result = False
+        if config != None:
+            StockApi = namedtuple('StockApi', ['key', 'secret', 'passphrase', 'sandbox'])
+            self.__api = StockApi()
+            try:
+                self.__api.key = config["api_key"]
+                self.__api.secret = config["api_secret"]
+                self.__api.passphrase = config["api_passphrase"]
+                self.__api.sandbox = config["sandbox"]
+            except:
+                super().apiError(self)
+                
+            self.__client = kc(self.__api.key, self.__api.secret, 
+                                self.__api.passphrase, self.__api.sandbox)
+            if self.__client != None:
+                result = True
+
+        return result
+    
+    def getTicket(self, ticket: str = None):
+        result = None
+        if super().getTicket(ticket) != None:
+            try:
+                result = self.__client.get_ticker(ticket)["price"]
+            except Exception as e:
+                if isinstance(e, KucoinRequestException):
+                    print("Kucoin client get_currency request failed cause of" 
+                                                                "network error!")
+                if isinstance(e, KucoinAPIException):
+                    print("Kucoin client get_currency request failed cause of" 
+                                                                    "API error!")
+                
+        return result
+    
+    def getTickets(self, tickets=any, start=dt.datetime.now(), end=dt.datetime.now()):
+        # using basicClass API
+        return super().getTickets(tickets, start, end)
+    
+    
 
 stockClients = {"yahoo": yahooClient, "kucoin": kucoinClient}
 
