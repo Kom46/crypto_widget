@@ -5,10 +5,43 @@ import json as js
 import datetime as dt
 from kucoin.client import Client as kc
 from kucoin.exceptions import *
+from array import *
+
 
 
 class basicClient:
-    tickers = []
+    __tickers = []
+    
+    @property
+    def tickers(self):
+        return self.__tickers
+    
+    @tickers.setter
+    def tickers(self, value = None):
+        if value == None:
+            return
+        
+        if isinstance(value, list):
+        # if value is array
+            for t in value:
+                self.__update_ticker(t)
+        else:
+        # if it is one ticket
+            self.__update_ticker(value)
+        # sort tickers by name
+        print(self.__tickers)
+        self.__tickers.sort(key=lambda x: x["name"])
+        print(self.__tickers)
+
+    def __update_ticker(self, value):
+        found = False
+        if len(self.__tickers) != 0:
+            for tt in self.__tickers:
+                if value["name"] == tt["name"]:
+                    self.__tickers[self.__tickers.index(tt)] = value
+                    found = True
+        if not found:
+            self.__tickers.append(value)
     
     def __init__(self, config = None, api_key = "") -> None:
         self.__api_key  = api_key
@@ -33,18 +66,18 @@ class basicClient:
     def apiError(self):
         print(f"One of api keys for class {self.__class__.__name__} is missing!")
     
-    def getTicket(self, ticket: str = None):
+    def getTicket(self, ticket: str  = ""):
         data = None
         if ticket != None:
             data = ticket
         return data
 
-    def getTickets(self, tickets=any, start=dt.datetime.now(), end=dt.datetime.now()):
+    def getTickets(self, tickets=any):
         data = []
         ticketClass = namedtuple('Ticket', ['name', 'ticketData'])
         for ticket in tickets:
             data.append(ticketClass(
-                ticket["name"], self.getTicket(ticket["ticket"])))
+                ticket["name"], self.getTicket(ticket["symbol"])))
         return data
 
 
@@ -61,7 +94,7 @@ class yahooClient(basicClient):
                 price = data["regularMarketOpen"]
             except:
                 pass
-            result = price, data
+            result = data
         return result
 
 # TODO: implement kucoin crypto exchange
@@ -81,6 +114,7 @@ class kucoinClient(basicClient):
                 
             self.__client = kc(self._api_key, self.__api.secret, 
                                 self.__api.passphrase, self.__api.sandbox)
+            
             assert(self.__client != None)
             
     
@@ -88,7 +122,7 @@ class kucoinClient(basicClient):
         result = None
         if super().getTicket(ticket) != None:
             try:
-                result = self.__client.get_ticker(ticket)["price"]
+                result = self.__client.get_ticker(ticket)
             except Exception as e:
                 if isinstance(e, KucoinRequestException):
                     print("Kucoin client get_currency request failed cause of" 
@@ -96,10 +130,11 @@ class kucoinClient(basicClient):
                 if isinstance(e, KucoinAPIException):
                     print("Kucoin client get_currency request failed cause of" 
                                                                     "API error!")
+        return result
                 
-    def getTickets(self, tickets=any, start=dt.datetime.now(), end=dt.datetime.now()):
+    def getTickets(self, tickets=any):
         # using basicClass API
-        return super().getTickets(tickets, start, end)
+        return super().getTickets(tickets)
     
 class coinmarketcapClient(basicClient):
     def __init__(self, config=None) -> None:
@@ -108,11 +143,11 @@ class coinmarketcapClient(basicClient):
     def getTicket(self, ticket: str = None):
         return super().getTicket(ticket)
     
-    def getTickets(self, tickets=any, start=dt.datetime.now(), end=dt.datetime.now()):
-        return super().getTickets(tickets, start, end)
+    def getTickets(self, tickets=any):
+        return super().getTickets(tickets)
 
 stockClients = {"yahoo": yahooClient, "kucoin": kucoinClient, 
-                "coinmarketcup": coinmarketcapClient}
+                "coinmarketcap": coinmarketcapClient}
 
 class stockExchange:
     def __init__(self, stock) -> None:
@@ -134,15 +169,11 @@ class stockExchange:
         pass
 
     def getStockPrices(self):
-        tickets = self.client.getTickets(tickets=self.__tickets)
-        result = []
-        for ticket in tickets:
-            result.append(ticket.ticketData[0])
-        return result
+        return self.client.getTickets(tickets=self.__tickets)
 
 
 params_filename = "params.json"
-params_file = f"{os.path.dirname(__file__)}/{params_filename}"
+params_file = f"{os.path.dirname(os.path.abspath(__file__))}/{params_filename}"
 
 
 class stockClient:
@@ -155,7 +186,9 @@ class stockClient:
                 self.__stocks.append(stockExchange(st))
 
     def getCurrentPrices(self):
+        result = []
         for stock in self.__stocks:
             if stock.client != None:
-                return stock.getStockPrices()
+                result.append(stock.getStockPrices())
+        return result
 
