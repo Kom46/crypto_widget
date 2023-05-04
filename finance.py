@@ -68,7 +68,7 @@ class basicClient:
     
     def getTicket(self, ticket: str  = ""):
         data = None
-        if ticket != None:
+        if ticket != "":
             data = ticket
         return data
 
@@ -191,4 +191,5 @@ class stockClient:
             if stock.client != None:
                 result.append(stock.getStockPrices())
         return result
+
 
