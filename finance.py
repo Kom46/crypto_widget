@@ -112,9 +112,8 @@ class kucoinClient(basicClient):
                     secret=config["api_secret"],
                     passphrase=config["api_passphrase"],
                     sandbox=config["sandbox"])
-            except Exception as e:
-                if isinstance(e, KucoinAPIException) or isinstance(e, KucoinRequestException):
-                    self.apiError()
+            except (KucoinAPIException, KucoinRequestException):
+                self.apiError()
 
             self.__client = kc(self._api_key, self.__api.secret,
                                self.__api.passphrase, self.__api.sandbox)
